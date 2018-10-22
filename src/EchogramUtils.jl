@@ -1,6 +1,8 @@
 module EchogramUtils
 
-export db2pow, pow2db, mag2db, db2mag, hysthresh, bwselect, vertically_smooth, vertically_bin, IN, meandb
+using Statistics
+
+export db2pow, pow2db, mag2db, db2mag, hysthresh, bwselect, vertically_smooth, vertically_bin, INmask,INfilter, meandb
 
 """
     db2pow(ydb)
@@ -49,14 +51,17 @@ Taking an echogram array `A` and a range vector `r`, smooth values
 vertically by taking the mean over succesive `thickness` bins.
 
 N.B. if your data is in dB, consider converting to linear (perhaps
-using `dB2linear`).
+using `dB2pow`).
 
 """
-function vertically_smooth(A, r, thickness)
+function vertically_smooth(A, r; thickness=1.43)
     b = zeros(size(A))
-    for i in 0:thickness:r[end]
-        mask = (r .>= i)  .& (r .< i+thickness)
-        b[mask,:] .= mean(A[mask,:],1)
+    m,n = size(A)
+    for j =1:n
+        for i in 0:thickness:r[end,j]
+            mask = (r[:,j] .>= i)  .& (r[:,j] .< i+thickness)
+            b[mask,j] .= mean(A[mask,j])
+        end
     end
     return b
 end
@@ -68,20 +73,23 @@ Taking an echogram array `A` and a range vector `r`, bin values
 vertically by taking the mean over succesive `thickness` sized bins.
 
 N.B. if your data is in dB, consider converting to linear (perhaps
-using `dB2linear`).
+using `dB2pow`).
 
 """
-function vertically_bin(A, r, thickness)
+function vertically_bin(A, r; thickness=1.43)
     b = []
-    for i in 0:thickness:r[end]
-        mask = (r .>= i)  .& (r .< i+thickness)
-        push!(b,mean(A[mask,:],1))
+    m,n = size(A)
+    for j =1:n
+        for i in 0:thickness:r[end,j]
+            mask = (r[:,j] .>= i)  .& (r[:,j] .< i+thickness)
+            push!(b,mean(A[mask,j]))
+        end
     end
     return vcat(b...)
 end
 
 """
-    IN(A, delta)
+    INmask(A, delta)
 
 Impulse noise filter based based on the two-sided comparison method
 described by Anderson et al. (2005) and further described in Ryan et
@@ -97,7 +105,7 @@ on either side.
 Returns a `BitArray` with the same dimensions as `A`.
 
 """
-function IN(A, delta)
+function INmask(A; delta=10)
     m,n = size(A)
 
     a = A[:,1:end-2]
@@ -107,6 +115,21 @@ function IN(A, delta)
     m2 = (b.-c) .> delta
 
     hcat(falses(m), m1 .& m2, falses(m))
+end
+
+function mymedian(a,b)
+    (a + b) /2
+end
+
+function INfilter(A; delta=10)
+    mask = INmask(A,delta=delta)
+
+    r = A[1:end,2:end]
+    l = A[1:end,1:end-1]
+    x = copy(A)
+
+    x[mask] .= mymedian.(l[mask[1:end,2:end]], r[mask[1:end,1:end-1]])
+    return x
 end
 
 
