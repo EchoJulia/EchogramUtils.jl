@@ -16,7 +16,8 @@ db2pow(ydb) = 10^(ydb/10)
 
 Convert power to decibels.
 """
-pow2db(y) = 10log10(y)
+pow2db(y) = y >= 0 ? 10log10(y) : NaN
+
 
 """
     mag2db(y)
