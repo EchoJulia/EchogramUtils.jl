@@ -2,21 +2,21 @@ module EchogramUtils
 
 using Statistics
 
-export db2pow, pow2db, mag2db, db2mag, hysthresh, bwselect, vertically_smooth, vertically_bin, INmask,INfilter, meandb
+export db2pow, pow2db, mag2db, db2mag, hysthresh, bwselect, vertically_smooth, vertically_bin, INmask,INfilter, meandb, stddb
 
 """
     db2pow(ydb)
 
 Convert decibels to power
 """
-db2pow(ydb) = 10^(ydb/10)
+db2pow(ydb::Real) = 10^(ydb/10)
 
 """
     pow2db(y)
 
 Convert power to decibels.
 """
-pow2db(y) = y >= 0 ? 10log10(y) : NaN
+pow2db(y::Real) = y >= 0 ? 10log10(y) : NaN
 
 
 """
@@ -24,14 +24,14 @@ pow2db(y) = y >= 0 ? 10log10(y) : NaN
 
 Convert magnitude to decibels.
 """
-mag2db(y) = 20log10(y)
+mag2db(y::Real) = 20log10(y)
 
 """
     db2mag(ydb)
 
 Convert decibels to magnitude.
 """
-db2mag(ydb) = 10^(ydb/20)
+db2mag(ydb::Real) = 10^(ydb/20)
 
 
 """
@@ -43,6 +43,12 @@ so averaging dB requires conversion to and from the linear domain.
 function meandb(ydb)
     a = db2pow.(ydb)
     pow2db(mean(a))
+end
+
+
+function stddb(ydb)
+    a = db2pow.(ydb)
+    pow2db(std(a))
 end
 
 """
